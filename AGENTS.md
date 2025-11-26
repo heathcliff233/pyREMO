@@ -1,7 +1,7 @@
 # REMO Python Rebuild – Project Context
 
 ## Current Snapshot (Nov 2025)
-- Legacy Perl/Fortran tooling has been retired. The project now ships a `pyproject.toml` + `pyremo` package, so `pip install .` drops a global `remo` console script (running `python remo.py` from the repo still works for devs).
+- Legacy Perl/Fortran tooling has been retired. The project now ships a `pyproject.toml` + `pyremo` package, so `pip install .` drops a global `remo` console script (running `python remo.py` from the repo still works for devs) and exposes a Python API (`pyremo.reconstruct` / `pyremo.reconstruct_file`).
 - Only native dependencies are `numpy` (required) and `tqdm` (optional via the `progress` extra). A typical install looks like:
 
   ```bash
@@ -28,6 +28,7 @@ All intermediate Hdd files are generated in a temporary directory and removed af
 | Module | Responsibilities |
 | --- | --- |
 | `remo.py` | CLI parsing, batch orchestration, temp-file management. |
+| `pyremo/api.py` | Shared helpers: parameter caching, `reconstruct_file`, and the in-memory `pyremo.reconstruct` API. |
 | `pyremo/resources.py` | Resolves paths to `FAMRcomm`/`BBdat`, honoring `PYREMO_DATA_DIR` and packaged data copies. |
 | `famr_python/topology.py` | Reads `FAMRcomm`, builds residue-specific atoms/bonds/angles, writes `Hdd`. |
 | `famr_python/io.py` | Converts `Hdd` back into Python objects and handles PDB read/write. |
@@ -52,6 +53,7 @@ All intermediate Hdd files are generated in a temporary directory and removed af
 
 ## Quick Diagnostic Checklist
 - After `python -m pip install .[progress]`, running `remo -i examples/xx1.pdb -o /tmp/xx1.full.pdb --overwrite` should complete without warnings and produce a file where no atoms have coordinates `(0,0,0)`. The legacy `python remo.py …` path remains valid from a repo checkout.
+- Programmatic smoke: `python - <<'PY'\nimport pyremo, pathlib\nca = pathlib.Path(\"examples/xx1.pdb\").read_text()\nfull = pyremo.reconstruct(ca)\nprint(len(full))\nPY` should print a positive length without errors.
 - If you see missing dependencies, reinstall with `python -m pip install .[progress]` (the extra pulls `tqdm`; base install only needs `numpy`).
 - Corrupted `FAMRcomm`/`BBdat` manifests as parsing errors—verify the copies under `pyremo/data/` (or whatever directory `PYREMO_DATA_DIR` points to) remain unedited.
 

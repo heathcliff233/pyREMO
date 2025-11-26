@@ -92,6 +92,26 @@ The script automatically:
 
 ---
 
+## Python API
+
+Programmatic usage is also supported once the package is installed (editable checkouts work too):
+
+```python
+import pyremo
+
+with open("examples/xx1.pdb") as handle:
+    ca_only = handle.read()
+
+full_atom_pdb = pyremo.reconstruct(ca_only)
+print(full_atom_pdb.splitlines()[0])
+```
+
+- `pyremo.reconstruct(pdb_string)` takes a CA-only PDB string and returns the reconstructed PDB string.
+- `pyremo.reconstruct_file(input_path, output_path, overwrite=False)` mirrors the CLI behavior.
+- `pyremo.load_parameters()` preloads the FAMRcomm/BBdat assets if you need to control when disk reads happen.
+
+---
+
 ## Outputs
 
 Each processed input produces a standard PDB containing:

@@ -16,18 +16,29 @@ AA_ALL_COUNT = {
     'NTR': 6, 'CTR': 2 # N-term and C-term additions
 }
 
-def parse_pdb_sequence(pdb_file):
-    """Parses CA atoms from PDB to get the sequence."""
+def parse_pdb_sequence(pdb_source):
+    """Parses CA atoms from a PDB path or text stream to get the sequence."""
     seq = []
     res_nums = []
-    with open(pdb_file, 'r') as f:
-        for line in f:
+
+    handle, should_close = _ensure_text_io(pdb_source)
+    try:
+        for line in handle:
             if line.startswith('ATOM') and line[12:16].strip() == 'CA':
                 res_name = line[17:20]
                 res_num = line[22:26]
                 seq.append(res_name)
                 res_nums.append(res_num)
+    finally:
+        if should_close:
+            handle.close()
     return seq, res_nums
+
+
+def _ensure_text_io(source):
+    if hasattr(source, "read"):
+        return source, False
+    return open(source, "r"), True
 
 def read_famr_comm(comm_file):
     """Reads the FAMRcomm parameter file."""

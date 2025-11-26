@@ -1,13 +1,19 @@
 import os
+from os import PathLike
+from typing import Any
+
 import numpy as np
+
 from .io import read_pdb_ca, read_hdd, write_pdb
 from .backbone import read_bbdat, add_backbone
 from .sidechain import build_sidechains
 from .hydrogen import add_hydrogens
 from .geometry import distance
 
-def run_reconstruction(pdb_file: str, hdd_file: str, bbdat_file: str, output_file: str):
-    print(f"Starting reconstruction for {pdb_file}")
+
+def run_reconstruction(pdb_source, hdd_file: str, bbdat_file: str, output_target):
+    source_desc = _describe_source(pdb_source)
+    print(f"Starting reconstruction for {source_desc}")
     
     # 1. Read Hdd (Topology)
     print("Reading topology (Hdd)...")
@@ -16,7 +22,7 @@ def run_reconstruction(pdb_file: str, hdd_file: str, bbdat_file: str, output_fil
     
     # 2. Read PDB (C-alpha trace)
     print("Reading PDB...")
-    ca_atoms = read_pdb_ca(pdb_file)
+    ca_atoms = read_pdb_ca(pdb_source)
     print(f"Loaded {len(ca_atoms)} CA atoms.")
     
     # 3. Map Coordinates
@@ -56,6 +62,16 @@ def run_reconstruction(pdb_file: str, hdd_file: str, bbdat_file: str, output_fil
     add_hydrogens(protein)
     
     # 7. Output
-    print(f"Writing output to {output_file}...")
-    write_pdb(protein, output_file)
+    output_desc = _describe_source(output_target)
+    print(f"Writing output to {output_desc}...")
+    write_pdb(protein, output_target)
     print("Done.")
+
+
+def _describe_source(source: Any) -> str:
+    if isinstance(source, (str, PathLike)):
+        return os.fspath(source)
+    name = getattr(source, "name", None)
+    if isinstance(name, str) and name:
+        return name
+    return "<memory>"

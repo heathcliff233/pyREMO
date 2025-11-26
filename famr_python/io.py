@@ -23,14 +23,15 @@ def _pdb_element_from_atom(atom: Atom) -> str:
         element = source[0]
     return element.rjust(2)
 
-def read_pdb_ca(filename: str) -> List[Tuple[str, str, int, np.ndarray]]:
+def read_pdb_ca(source) -> List[Tuple[str, str, int, np.ndarray]]:
     """
     Reads C-alpha atoms from PDB.
     Returns list of (res_name, chain, res_num, coords).
     """
     ca_atoms = []
-    with open(filename, 'r') as f:
-        for line in f:
+    handle, should_close = _ensure_text_io(source)
+    try:
+        for line in handle:
             if line.startswith('ATOM') and line[12:16].strip() == 'CA':
                 res_name = line[17:20].strip()
                 chain = line[21]
@@ -39,6 +40,9 @@ def read_pdb_ca(filename: str) -> List[Tuple[str, str, int, np.ndarray]]:
                 y = float(line[38:46])
                 z = float(line[46:54])
                 ca_atoms.append((res_name, chain, res_num, np.array([x, y, z])))
+    finally:
+        if should_close:
+            handle.close()
     return ca_atoms
 
 def read_hdd(filename: str) -> Protein:
@@ -169,11 +173,12 @@ def read_hdd(filename: str) -> Protein:
         
     return protein
 
-def write_pdb(protein: Protein, filename: str):
+def write_pdb(protein: Protein, destination):
     """
     Writes the protein to a PDB file.
     """
-    with open(filename, 'w') as f:
+    handle, should_close = _ensure_text_io_for_write(destination)
+    try:
         serial = 1
         for res in protein.residues:
             for atom in res.atoms:
@@ -193,9 +198,28 @@ def write_pdb(protein: Protein, filename: str):
 
                 element = _pdb_element_from_atom(atom)
 
-                f.write(f"ATOM  {serial:5d} {pdb_name:4s} {res.name:3s} {chain_id:1s}{resnum:4d}    "
-                        f"{atom.coords[0]:8.3f}{atom.coords[1]:8.3f}{atom.coords[2]:8.3f}"
-                        f"  1.00  0.00          {element:>2s}\n")
+                handle.write(f"ATOM  {serial:5d} {pdb_name:4s} {res.name:3s} {chain_id:1s}{resnum:4d}    "
+                              f"{atom.coords[0]:8.3f}{atom.coords[1]:8.3f}{atom.coords[2]:8.3f}"
+                              f"  1.00  0.00          {element:>2s}\n")
                 serial += 1
                 if serial > 99999: serial = 1 # Wrap around (simplified)
-        f.write("END\n")
+        handle.write("END\n")
+    finally:
+        if should_close:
+            handle.close()
+
+
+def _ensure_text_io(source):
+    if hasattr(source, "read"):
+        if hasattr(source, "seek"):
+            source.seek(0)
+        return source, False
+    return open(source, "r"), True
+
+
+def _ensure_text_io_for_write(destination):
+    if hasattr(destination, "write"):
+        if hasattr(destination, "seek"):
+            destination.seek(0)
+        return destination, False
+    return open(destination, "w"), True
