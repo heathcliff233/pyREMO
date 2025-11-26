@@ -1,0 +1,110 @@
+# REMO (Python Edition)
+
+Reconstruct Atomic MOdels (REMO) now runs as a pure Python tool.  
+Given a Cα-only PDB file, it rebuilds backbone atoms, side chains, and hydrogens using the
+original `FAMRcomm` parameters and `BBdat` backbone library—no Fortran binaries required.
+
+---
+
+## Requirements
+
+- Python 3.9+
+- `numpy`
+- `tqdm` (optional – progress bar; the script falls back to a simple iterator when missing)
+- Parameter/data files in the repository root:
+  - `FAMRcomm`
+  - `BBdat`
+
+Install dependencies:
+
+```bash
+python -m pip install numpy tqdm
+```
+
+(If you already have a managed environment such as `esmfold`, just activate it first.)
+
+---
+
+## Repository Layout
+
+```
+remo.py               # CLI entry point
+famr_python/          # Python reconstruction package
+    backbone.py       # BBdat lookup + backbone placement
+    sidechain.py      # Idealized side-chain builder
+    hydrogen.py       # Hydrogen placement heuristics
+    geometry.py       # Vector math utilities
+    io.py             # Hdd/PDB readers & writer
+    topology.py       # FAMRcomm parser + Hdd generator
+BBdat                 # Backbone conformation library (required)
+FAMRcomm              # Atom/bond/angle/H-bond parameters (required)
+examples/             # Sample Cα inputs + helper files
+```
+
+---
+
+## Quick Start
+
+1. Place your Cα-only PDB (or directory of PDBs) anywhere on disk.
+2. From the repo root, run:
+
+```bash
+python remo.py \
+    --input examples/xx1.pdb \
+    --output output_test.pdb \
+    --overwrite             # optional
+```
+
+### CLI Arguments
+
+| Option | Description |
+| --- | --- |
+| `-i / --input` | Path to a PDB file or directory containing PDB/ENT files. |
+| `-o / --output` | Destination file or directory. When `--input` is a directory, a matching tree is created. |
+| `--overwrite` | Overwrite existing outputs (otherwise files are skipped). |
+
+The script automatically:
+1. Parses the input Cα trace (`parse_pdb_sequence`).
+2. Generates a temporary `Hdd` topology from `FAMRcomm`.
+3. Reconstructs the structure via `famr_python.reconstruct`.
+4. Writes a full-atom PDB to the requested location.
+
+---
+
+## Outputs
+
+Each processed input produces a standard PDB containing:
+- All backbone atoms (N/CA/C/O and terminal modifications NH3/OXT).
+- Side-chain heavy atoms using a single idealized rotamer per residue.
+- Hydrogens placed with fixed bond lengths/angles (sufficient for visualization or downstream refinement).
+
+Temporary `Hdd` files are generated in `/tmp` and deleted once reconstruction completes.
+
+---
+
+## Known Limitations / Future Work
+
+- Side-chain rotamers are not optimized for clashes; they use a single common geometry per residue.
+- Hydrogen orientations are heuristic and may need refinement before energy minimization.
+- Secondary-structure-specific placement is limited (helix/sheet cues from `BBdat` bins only).
+- Only “mode 2” (Cα reconstruction) from the original REMO workflow is covered for now.
+
+Despite those simplifications, the pipeline consistently outputs complete coordinates—no zeroed atoms—and avoids the Fortran runtime issues that motivated this rewrite.
+
+---
+
+## Example
+
+```
+python remo.py -i examples/xx1.pdb -o examples/xx1.full.pdb --overwrite
+```
+
+Result: `examples/xx1.full.pdb` (full-atom model), using the bundled example Cα file.
+
+---
+
+For questions about the historical REMO method, refer to:
+
+Yunqi Li & Yang Zhang (2009).  
+“REMO: a new protocol to generate full atomic protein models from C-alpha traces by optimizing backbone hydrogen-bonding network.” Protein Sci. 18(3): 665–676.
+

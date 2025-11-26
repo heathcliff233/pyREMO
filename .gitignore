@@ -1,0 +1,37 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.env
+.venv/
+venv/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Testing / coverage / cache
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# Editors / OS junk
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.tmp
+*.log
+*.bak
+
+# Generated artifacts
+output_*.pdb
+*.pdb.h
+*.pdb.fix
+Hdd.*
