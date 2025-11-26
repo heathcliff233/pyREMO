@@ -1,14 +1,15 @@
 # REMO Python Rebuild – Project Context
 
 ## Current Snapshot (Nov 2025)
-- Legacy Perl/Fortran tooling has been retired. `remo.py` is now the only entry point and runs a fully Python reconstruction stack located under `famr_python/`.
-- Only native dependencies are `numpy` (required) and `tqdm` (optional). No compilation steps are necessary; the canonical run command is:
+- Legacy Perl/Fortran tooling has been retired. The project now ships a `pyproject.toml` + `pyremo` package, so `pip install .` drops a global `remo` console script (running `python remo.py` from the repo still works for devs).
+- Only native dependencies are `numpy` (required) and `tqdm` (optional via the `progress` extra). A typical install looks like:
 
   ```bash
-  python remo.py -i <input_ca.pdb> -o <full_atom.pdb> [--overwrite]
+  python -m pip install .[progress]
+  remo -i <input_ca.pdb> -o <full_atom.pdb> [--overwrite]
   ```
 
-- The original parameter/data assets (`FAMRcomm`, `BBdat`) remain untouched and must stay in the repo root because the Python code reads them directly.
+- The canonical parameter/data assets (`FAMRcomm`, `BBdat`) now live solely inside `pyremo/data` (tracked in git and bundled in wheels/sdists). `pyremo.resources.resolve_data_file` checks `PYREMO_DATA_DIR`, then the repo root (for custom drops), then `pyremo/data`/packaged copies.
 - Example inputs (`examples/xx1.pdb`, etc.) double as smoke tests for new changes.
 
 ## Reconstruction Pipeline
@@ -27,6 +28,7 @@ All intermediate Hdd files are generated in a temporary directory and removed af
 | Module | Responsibilities |
 | --- | --- |
 | `remo.py` | CLI parsing, batch orchestration, temp-file management. |
+| `pyremo/resources.py` | Resolves paths to `FAMRcomm`/`BBdat`, honoring `PYREMO_DATA_DIR` and packaged data copies. |
 | `famr_python/topology.py` | Reads `FAMRcomm`, builds residue-specific atoms/bonds/angles, writes `Hdd`. |
 | `famr_python/io.py` | Converts `Hdd` back into Python objects and handles PDB read/write. |
 | `famr_python/backbone.py` | BBdat ingestion + backbone coordinate reconstruction (with fallback for edge bins). |
@@ -49,9 +51,8 @@ All intermediate Hdd files are generated in a temporary directory and removed af
 5. **Testing** – No automated regression suite yet; coverage currently relies on running `examples/xx1.pdb`.
 
 ## Quick Diagnostic Checklist
-- `python remo.py -i examples/xx1.pdb -o /tmp/xx1.full.pdb --overwrite` should complete without warnings and produce a file where no atoms have coordinates `(0,0,0)`.
-- If you see missing dependencies, install `numpy` (and optionally `tqdm`) in your active environment.
-- Corrupted `FAMRcomm`/`BBdat` manifests as parsing errors—verify the files remain unedited.
+- After `python -m pip install .[progress]`, running `remo -i examples/xx1.pdb -o /tmp/xx1.full.pdb --overwrite` should complete without warnings and produce a file where no atoms have coordinates `(0,0,0)`. The legacy `python remo.py …` path remains valid from a repo checkout.
+- If you see missing dependencies, reinstall with `python -m pip install .[progress]` (the extra pulls `tqdm`; base install only needs `numpy`).
+- Corrupted `FAMRcomm`/`BBdat` manifests as parsing errors—verify the copies under `pyremo/data/` (or whatever directory `PYREMO_DATA_DIR` points to) remain unedited.
 
 This document should be updated whenever we touch the reconstruction logic, data formats, or supported workflows so future contributors can quickly understand the current state of the Python port.
-

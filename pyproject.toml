@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyremo"
+version = "0.1.0"
+description = "Python remake of REMO for reconstructing full-atom models from C-alpha traces"
+readme = "README.md"
+authors = [{ name = "pyREMO maintainers" }]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.20",
+    "importlib-resources>=5 ; python_version < '3.9'",
+]
+keywords = ["protein", "reconstruction", "pdb", "structure"]
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "License :: Other/Proprietary License",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+progress = ["tqdm>=4.60"]
+
+[project.scripts]
+remo = "remo:main"
+
+[tool.setuptools]
+packages = ["famr_python", "pyremo", "pyremo.data"]
+py-modules = ["remo"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+pyremo = ["data/BBdat", "data/FAMRcomm"]

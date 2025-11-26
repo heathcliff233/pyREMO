@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
+import argparse
 import os
 import sys
-import argparse
 import tempfile
+
 from famr_python.topology import read_famr_comm, generate_hdd, parse_pdb_sequence
 from famr_python.reconstruct import run_reconstruction
+from pyremo.resources import resolve_data_file
 
 try:
     from tqdm import tqdm
@@ -76,18 +78,14 @@ def main():
     
     args = parser.parse_args()
     
-    # Check Data Files
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    famr_comm = os.path.join(script_dir, 'FAMRcomm')
-    bbdat_file = os.path.join(script_dir, 'BBdat')
-    
-    if not os.path.exists(famr_comm):
-        print("Error: FAMRcomm not found.")
+    # Resolve data assets (repo checkout or installed package)
+    try:
+        famr_comm = resolve_data_file('FAMRcomm')
+        bbdat_file = resolve_data_file('BBdat')
+    except FileNotFoundError as exc:
+        print(f"Error: {exc}")
         sys.exit(1)
-    if not os.path.exists(bbdat_file):
-        print("Error: BBdat not found.")
-        sys.exit(1)
-        
+
     print("Loading parameters...")
     comm_data = read_famr_comm(famr_comm)
     

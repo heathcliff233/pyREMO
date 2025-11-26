@@ -6,29 +6,41 @@ original `FAMRcomm` parameters and `BBdat` backbone library—no Fortran binarie
 
 ---
 
-## Requirements
+## Installation
 
-- Python 3.9+
-- `numpy`
-- `tqdm` (optional – progress bar; the script falls back to a simple iterator when missing)
-- Parameter/data files in the repository root:
-  - `FAMRcomm`
-  - `BBdat`
-
-Install dependencies:
+### Option 1 – use the CLI everywhere
 
 ```bash
-python -m pip install numpy tqdm
+python -m pip install .[progress]     # add [progress] to pull in tqdm
+remo -i examples/xx1.pdb -o /tmp/xx1.full.pdb --overwrite
 ```
 
-(If you already have a managed environment such as `esmfold`, just activate it first.)
+This drops a `remo` console script into your active environment and bundles the `FAMRcomm` / `BBdat`
+parameter files with the package. The helper automatically locates them, but you can override the
+lookup by pointing `PYREMO_DATA_DIR` to a directory that holds fresh copies.
+
+### Option 2 – run straight from the repo
+
+- Python 3.9+
+- `numpy` (required)
+- `tqdm` (optional – progress bar)
+- Parameter/data files ship inside `pyremo/data` (set `PYREMO_DATA_DIR` to use a custom directory)
+
+```bash
+python -m pip install numpy tqdm    # or reuse an existing environment
+python remo.py -i examples/xx1.pdb -o /tmp/xx1.full.pdb --overwrite
+```
 
 ---
 
 ## Repository Layout
 
 ```
+pyproject.toml        # Packaging metadata / entry points
 remo.py               # CLI entry point
+pyremo/               # Package glue + bundled data copies
+    resources.py      # Data resolution helper used by the CLI
+    data/             # Packaged FAMRcomm + BBdat (only canonical copy now)
 famr_python/          # Python reconstruction package
     backbone.py       # BBdat lookup + backbone placement
     sidechain.py      # Idealized side-chain builder
@@ -36,23 +48,32 @@ famr_python/          # Python reconstruction package
     geometry.py       # Vector math utilities
     io.py             # Hdd/PDB readers & writer
     topology.py       # FAMRcomm parser + Hdd generator
-BBdat                 # Backbone conformation library (required)
-FAMRcomm              # Atom/bond/angle/H-bond parameters (required)
 examples/             # Sample Cα inputs + helper files
 ```
+
+The canonical `FAMRcomm` / `BBdat` files now live in `pyremo/data` and ship with the package.
+Set `PYREMO_DATA_DIR=/path/to/dir` if you need to point the CLI at a custom or newer copy.
 
 ---
 
 ## Quick Start
 
-1. Place your Cα-only PDB (or directory of PDBs) anywhere on disk.
-2. From the repo root, run:
+### Installed CLI (recommended)
+
+```bash
+remo \
+    --input examples/xx1.pdb \
+    --output output_test.pdb \
+    --overwrite
+```
+
+### Local checkout
 
 ```bash
 python remo.py \
     --input examples/xx1.pdb \
     --output output_test.pdb \
-    --overwrite             # optional
+    --overwrite
 ```
 
 ### CLI Arguments
@@ -96,7 +117,7 @@ Despite those simplifications, the pipeline consistently outputs complete coordi
 ## Example
 
 ```
-python remo.py -i examples/xx1.pdb -o examples/xx1.full.pdb --overwrite
+remo -i examples/xx1.pdb -o examples/xx1.full.pdb --overwrite
 ```
 
 Result: `examples/xx1.full.pdb` (full-atom model), using the bundled example Cα file.
@@ -107,4 +128,3 @@ For questions about the historical REMO method, refer to:
 
 Yunqi Li & Yang Zhang (2009).  
 “REMO: a new protocol to generate full atomic protein models from C-alpha traces by optimizing backbone hydrogen-bonding network.” Protein Sci. 18(3): 665–676.
-
